@@ -1,12 +1,13 @@
+
+import "./env.config";
+
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import multer from 'multer';
 import { SearchRoute } from './route/SearchRoute';
 import { ChatRoute } from './route/ChatRoute';
 import * as path from 'path';
 
-dotenv.config({ path: ".env.development" });
 
 const HOSTNAME = 'localhost';
 const PORT = Number(process.env.LOCAL_AI_BRIDGE_DEV_NESTIFY_API_PORT);

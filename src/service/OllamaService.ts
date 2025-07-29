@@ -1,59 +1,76 @@
-import { spawn } from 'child_process';
-import { Readable } from 'stream';
-import { IRequest } from '@local_ai_bridge_dev_nestify/model/IRequest';
+import { spawn } from 'child_process'
+import { Readable } from 'stream'
+import { IRequest } from '@local_ai_bridge_dev_nestify/model/IRequest'
 
 export class OllamaService {
 
-  private static readonly model = process.env.LOCAL_AI_BRIDGE_DEV_NESTIFY_OLLAMA_MODEL!;
-  private static readonly host = process.env.LOCAL_AI_BRIDGE_DEV_NESTIFY_OLLAMA_HOST!;
+  private static readonly model = 
+    process.env.LOCAL_AI_BRIDGE_DEV_NESTIFY_OLLAMA_MODEL!;
 
-  static async runSearch(
-    request: IRequest
-  ): Promise<string> {
+  private static readonly searchHost = 
+    process.env.LOCAL_AI_BRIDGE_DEV_NESTIFY_OLLAMA_SEARCH_HOST!;
 
-    const args = ['query', this.model, '--json'];
+  private static readonly chatHost = 
+    process.env.LOCAL_AI_BRIDGE_DEV_NESTIFY_OLLAMA_CHAT_HOST!;
+
+  static async runSearch(request: IRequest): Promise<string> {
     const proc = spawn(
-      'ollama', 
-      args, 
-      { stdio: ['pipe', 'pipe', 'inherit'] }
+      'ollama',
+      ['run', this.model],
+      {
+        stdio: ['pipe','pipe','inherit'],
+        env: { 
+          OLLAMA_HOST: this.searchHost 
+        }
+      }
     );
-    const prompt = 
-      `${request.system.content}\nUser: ${request.user.content}`;
 
-    proc.stdin.write(JSON.stringify({ prompt }));
+    const prompt = JSON.stringify({
+      user: request.user.content,
+      system: request.system.content
+    });
+    proc.stdin.write(prompt + '\n');
     proc.stdin.end();
 
     let output = '';
-    for await (const chunk of (proc.stdout as Readable)) {
+    (proc.stdout as Readable).on('data', (buf) => {
+      const text = buf.toString();
+      console.log("[] OllamaService.runSearch.chunk:", text);
+      output += text;
+    });
 
-      output += chunk.toString();
-    }
+    await new Promise(resolve => proc.on('close', resolve));
 
-    await new Promise((resolve) => proc.on('close', resolve));
-
-    return output;
+    return output.trim().replace(/^```json\s*|\s*```$/g, '').trim();
   }
 
+
   static streamChat(
-    request: IRequest, 
-    onData: (chunk: string) => void
+    request: IRequest,
+    onData: (chunk: string) => void,
+    onEnd?: () => void
   ): void {
 
-    const args = ['chat', this.model, '--stream'];
     const proc = spawn(
-      'ollama', 
-      args, 
-      { stdio: ['pipe', 'pipe', 'inherit'] }
-    );
-    const prompt = 
-      `${request.system.content}\nUser: ${request.user.content}`;
+      'ollama',
+      ['run', this.model],
+      { stdio: ['pipe','pipe','inherit'],
+        env: { 
+          OLLAMA_HOST: this.chatHost 
+        }
+      },
+    )
 
-    proc.stdin.write(JSON.stringify({ prompt }));
+    const prompt = `${request.system.content}\nUser: ${request.user.content}\n`
+    proc.stdin.write(prompt)
     proc.stdin.end();
-
+    
     (proc.stdout as Readable).on('data', (buf) => {
+      onData(buf.toString())
+    })
 
-      onData(buf.toString());
-    });
+    proc.on('close', () => {
+      if (onEnd) onEnd()
+    })
   }
 }

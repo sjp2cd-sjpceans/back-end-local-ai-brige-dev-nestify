@@ -46,12 +46,25 @@ export class ChatController {
       Connection: 'keep-alive'
     });
 
-    OllamaService.streamChat(clientRequest, (chunk) => {
-      res.write(`data: ${chunk.replace(/\n/g, '\\n')}\n\n`);
-    });
+    OllamaService.streamChat(clientRequest,
+      (chunk) => {
+        console.log('[Ollama Chunk]', chunk);
+        res.write(`data: ${chunk.replace(/\n/g, '\\n')}\n\n`);
+        res.flushHeaders();
+      },
+      () => {
+        res.write(`data: [DONE]\n\n`);
+        res.end();
+      }
+    );
 
-    req.on('close', () => {
-      res.end();
-    });
+    // OllamaService.streamChat(clientRequest, (chunk) => {
+      
+    //   res.write(`data: ${chunk.replace(/\n/g, '\\n')}\n\n`);
+    // });
+
+    // req.on('close', () => {
+    //   res.end();
+    // });
   }
 }
