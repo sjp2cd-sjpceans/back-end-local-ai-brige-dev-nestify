@@ -20,6 +20,8 @@ export class OllamaService {
       {
         stdio: ['pipe','pipe','inherit'],
         env: { 
+          CUDA_VISIBLE_DEVICES: "0",
+          OLLAMA_FLASH_ATTENTION: "1",
           OLLAMA_HOST: this.searchHost 
         }
       }
@@ -56,6 +58,8 @@ export class OllamaService {
       ['run', this.model],
       { stdio: ['pipe','pipe','inherit'],
         env: { 
+          CUDA_VISIBLE_DEVICES: "0",
+          OLLAMA_FLASH_ATTENTION: "1",
           OLLAMA_HOST: this.chatHost 
         }
       },
