@@ -25,10 +25,10 @@ export class OllamaService {
       }
     );
 
-    const prompt = JSON.stringify({
-      user: request.user.content,
-      system: request.system.content
-    });
+    const prompt = `
+      user: ${request.user.content},
+      system: ${request.system.content}
+  `.trim();
     proc.stdin.write(prompt + '\n');
     proc.stdin.end();
 
