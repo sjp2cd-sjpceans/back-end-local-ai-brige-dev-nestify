@@ -46,7 +46,8 @@ export class ChatController {
       Connection: 'keep-alive'
     });
 
-    OllamaService.streamChat(clientRequest,
+    OllamaService.streamChat(
+      clientRequest,
       (chunk) => {
         console.log('[Ollama Chunk]', chunk);
         res.write(`data: ${chunk.replace(/\n/g, '\\n')}\n\n`);
